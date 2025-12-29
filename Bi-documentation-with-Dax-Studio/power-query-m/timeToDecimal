@@ -1,0 +1,6 @@
+( Hora as time ) as number => 
+let
+  Fonte = Number.From ( Hora ) * 24,
+  MenosCasas = Number.RoundDown ( Fonte, 4 )
+in
+  MenosCasas
