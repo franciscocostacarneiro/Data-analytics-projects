@@ -1,0 +1,82 @@
+dCalendario = 
+/* 
+    Esta tabela tem como principal característica basear-se nas semanas dos meses, 
+    onde cada semana iniciam nas segundas-feiras e terminam no domingo.
+    As colunas contendo a tag "Semanal" no nome são baseadas esepecificamente nas
+    semanas dos meses.
+*/
+
+-- Defina a data inicial
+VAR __DataInicial = DATE ( 2022, 1, 1 )
+
+-- Defina a data final
+VAR __DataFinal = DATE ( 2025, 12, 31 )
+
+-- Gera a lista de datas
+VAR __datas = 
+SELECTCOLUMNS (
+    CALENDAR ( __DataInicial, __DataFinal ),
+    "Data", 
+    [Date] 
+)
+
+-- Adiciona o início da semana
+VAR __adIniSemana = 
+ADDCOLUMNS ( 
+    __datas,
+    "InicioSemana", [Data] - WEEKDAY ( [Data], 2 ) + 1
+)
+
+-- Adiciona as granularidades comuns
+VAR __adComuns = 
+ADDCOLUMNS (
+    __adIniSemana,
+    "FinalSemana", [InicioSemana] + 6,
+    "DiaSemanaNo", WEEKDAY ( [Data], 2 ),
+    "DiaSemana", FORMAT ( [Data], "dddd" ),
+    "DiaSemanaAbreviado", FORMAT ( [Data], "ddd" ),
+    "DiaNo", DAY ( [Data] ),
+    "MesSemanalNo", MONTH ( [InicioSemana] ),
+    "MesSemanal", FORMAT ( [InicioSemana], "mmmm", "pt-BR" ),
+    "MesSemanalAbreviado", FORMAT ( [InicioSemana], "mmm", "pt-BR" ),
+    "MesAnoSemanalNo", YEAR ( [InicioSemana] ) * 100 + MONTH ( [InicioSemana] ),
+    "MesAnoSemanal",  FORMAT ( [InicioSemana], "mmm-yy", "pt-BR" ),
+    "MesNo", MONTH ( [Data] ),
+    "Mes", FORMAT ( [Data], "mmmm", "pt-BR" ),
+    "MesAbreviado", FORMAT ( [Data], "mmm", "pt-BR" ),
+    "MesAnoNo", YEAR ( [Data] ) * 100 + MONTH ( [Data] ),
+    "MesAno",  FORMAT ( [Data], "mmm-yy", "pt-BR" ),
+    "TrimestreSemanal", "Tri. " & FORMAT ( [InicioSemana], "q"),
+    "TrimestreAnoSemanalNo", YEAR ( [InicioSemana] ) * 100 +  QUARTER ( [InicioSemana] ),
+    "TrimestreAnoSemanal", "Tri. " &  FORMAT ( [InicioSemana], "q-yy"),
+    "Trimestre", "Tri. " & FORMAT ( [Data], "q"),
+    "TrimestreAnoNo", YEAR ( [Data] ) * 100 +  QUARTER ( [Data] ),
+    "TrimestreAno", "Tri. " & FORMAT ( [Data], "q-yy"),
+    "AnoSemanal", YEAR ( [InicioSemana] ),
+    "Ano", YEAR ( [Data] ),
+    "SemanaISO", "Sem. " & FORMAT ( WEEKNUM ( [Data], 21 ), "00" ),
+    "AnoISO", YEAR ( [Data] + 26 - WEEKNUM ( [Data], 21 ) ),
+    "SemanaAnoISONo",  YEAR ( [Data] + 26 - WEEKNUM ( [Data], 21 ) ) * 100 
+        + WEEKNUM ( [Data], 21 ),
+    "SemanaAnoISO", "Sem. " & FORMAT ( WEEKNUM ( [Data], 21 ), "00" ) 
+        & "-" & FORMAT ( YEAR ( [Data] + 26 - WEEKNUM ( [Data], 21 ) ), "00" )
+)
+
+-- Adiciona a semana do mês
+VAR __adSemanaMes = 
+ADDCOLUMNS (
+    __adComuns,
+    "SemanaMes",
+    VAR __InicioSemana = [Data] - WEEKDAY ( [Data], 2 ) + 1
+    VAR __InicioMes = EOMONTH ( __InicioSemana, -1 ) + 1
+    VAR __primeirosSeteDias = CALENDAR ( __InicioMes, __InicioMes + 6 )
+    VAR __PrimeiraSegundaFeira = INDEX ( 1, FILTER ( __primeirosSeteDias, WEEKDAY ( [Date], 2 ) = 1 ) )
+    VAR __SemanaMes = ROUNDUP ( DIVIDE ( [Data] - __PrimeiraSegundaFeira, 7 ) + 0.05, 0 )
+    RETURN __SemanaMes
+)
+
+
+RETURN __adSemanaMes 
+
+
+
